@@ -1,16 +1,20 @@
 "use client";
-import React, { useState, useEffect } from "react";
+
+import React, { useEffect, useState } from "react";
 import {
   Table,
   Button,
   Modal,
   Form,
   Input,
-  message,
   Popconfirm,
-  Space,
+  message,
+  Spin,
 } from "antd";
 import axios from "axios";
+import { useRouter } from "next/navigation";
+
+const API_URL = "/api/students";
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);
@@ -18,15 +22,18 @@ export default function StudentsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [form] = Form.useForm();
+  const router = useRouter();
 
-  // Fetch students
+  
   const fetchStudents = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await axios.get("/api/students");
+      const res = await axios.get(API_URL);
       setStudents(res.data);
+      message.success("Students loaded successfully");
     } catch (error) {
-      message.error("Failed to fetch students");
+      console.error("Fetch Error:", error);
+      message.error("Failed to load students");
     } finally {
       setLoading(false);
     }
@@ -36,120 +43,133 @@ export default function StudentsPage() {
     fetchStudents();
   }, []);
 
-  // Open modal for Add or Edit
+ 
   const openModal = (student = null) => {
     setEditingStudent(student);
-    if (student) {
-      form.setFieldsValue(student);
-    } else {
-      form.resetFields();
-    }
+    form.resetFields();
+    if (student) form.setFieldsValue(student);
     setIsModalOpen(true);
   };
 
-  // Submit form
+  
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
 
       if (editingStudent) {
-        // Update student
-        await axios.put(`/api/students/${editingStudent.id}`, values);
+        await axios.put(API_URL, { id: editingStudent.id, ...values });
         message.success("Student updated successfully");
       } else {
-        // Add new student
-        await axios.post("/api/students", values);
+        await axios.post(API_URL, values);
         message.success("Student added successfully");
       }
 
       setIsModalOpen(false);
       fetchStudents();
     } catch (error) {
+      console.error("Save Error:", error);
       message.error("Failed to save student");
     }
   };
 
-  // Delete student
+ 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`/api/students/${id}`);
+      await axios.delete(API_URL, { data: { id } });
       message.success("Student deleted successfully");
       fetchStudents();
     } catch (error) {
+      console.error("Delete Error:", error);
       message.error("Failed to delete student");
     }
   };
 
-  // Table columns
   const columns = [
+    { title: "ID", dataIndex: "id", width: 60 },
+    { title: "NIS", dataIndex: "nis" },
     { title: "Name", dataIndex: "name" },
-    { title: "Email", dataIndex: "email" },
+    { title: "Class", dataIndex: "class_name" },
     { title: "Major", dataIndex: "major" },
+    { title: "Status", dataIndex: "status" },
     {
-      title: "Actions",
+      title: "Action",
       render: (_, record) => (
-        <Space>
-          <Button type="primary" onClick={() => openModal(record)}>
+        <>
+          <Button type="link" onClick={() => openModal(record)}>
             Edit
           </Button>
+
           <Popconfirm
-            title="Delete student"
-            description="Are you sure to delete this student?"
+            title="Are you sure to delete?"
             onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
           >
-            <Button danger>Delete</Button>
+            <Button danger type="link">
+              Delete
+            </Button>
           </Popconfirm>
-        </Space>
+        </>
       ),
     },
   ];
 
+  if (loading)
+    return (
+      <div style={{ textAlign: "center", padding: 50 }}>
+        <Spin size="large" />
+      </div>
+    );
+
   return (
     <div style={{ padding: 24 }}>
-      <h1 style={{ marginBottom: 20 }}>Student Management</h1>
+      <h1>Student Management</h1>
 
       <Button
         type="primary"
-        style={{ marginBottom: 16 }}
-        onClick={() => openModal(null)}
+        onClick={() => openModal()}
+        style={{ marginBottom: 20 }}
       >
         Add Student
       </Button>
 
       <Table
-        rowKey="id"
-        loading={loading}
         columns={columns}
         dataSource={students}
+        rowKey="id"
+        bordered
+        pagination={{ pageSize: 6 }}
       />
 
+     
       <Modal
         title={editingStudent ? "Edit Student" : "Add Student"}
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
         onOk={handleSubmit}
-        okText={editingStudent ? "Update" : "Add"}
+        onCancel={() => setIsModalOpen(false)}
+        okText="Save"
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            name="name"
-            label="Full Name"
-            rules={[{ required: true, message: "Please input name" }]}
+            name="nis"
+            label="NIS"
+            rules={[{ required: true, message: "Please input NIS" }]}
           >
-            <Input placeholder="Enter full name" />
+            <Input />
           </Form.Item>
 
           <Form.Item
-            name="email"
-            label="Email"
-            rules={[
-              { required: true, message: "Please input email" },
-              { type: "email", message: "Invalid email" },
-            ]}
+            name="name"
+            label="Name"
+            rules={[{ required: true, message: "Please input name" }]}
           >
-            <Input placeholder="Enter email" />
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="class_name"
+            label="Class"
+            rules={[{ required: true, message: "Please input class" }]}
+          >
+            <Input />
           </Form.Item>
 
           <Form.Item
@@ -157,7 +177,15 @@ export default function StudentsPage() {
             label="Major"
             rules={[{ required: true, message: "Please input major" }]}
           >
-            <Input placeholder="Enter major" />
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="status"
+            label="Status"
+            rules={[{ required: true, message: "Please input status" }]}
+          >
+            <Input />
           </Form.Item>
         </Form>
       </Modal>
