@@ -15,6 +15,8 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 
 const API_URL = "/api/students";
+const [currentPage, setCurrentPage] = useState(1);
+
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);
@@ -24,13 +26,18 @@ export default function StudentsPage() {
   const [form] = Form.useForm();
   const router = useRouter();
 
-  
+  // =========================
+  // Fetch Students
+  // =========================
   const fetchStudents = async () => {
     setLoading(true);
     try {
       const res = await axios.get(API_URL);
-      setStudents(res.data);
-      message.success("Students loaded successfully");
+
+      // SORT TERBARU DI ATAS
+      const sorted = [...res.data].sort((a, b) => b.id - a.id);
+
+      setStudents(sorted);
     } catch (error) {
       console.error("Fetch Error:", error);
       message.error("Failed to load students");
@@ -43,7 +50,9 @@ export default function StudentsPage() {
     fetchStudents();
   }, []);
 
- 
+  // =========================
+  // Add / Edit Modal
+  // =========================
   const openModal = (student = null) => {
     setEditingStudent(student);
     form.resetFields();
@@ -51,33 +60,49 @@ export default function StudentsPage() {
     setIsModalOpen(true);
   };
 
-  
+  // =========================
+  // Submit Add / Edit
+  // =========================
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
 
       if (editingStudent) {
+        // UPDATE
         await axios.put(API_URL, { id: editingStudent.id, ...values });
-        message.success("Student updated successfully");
+        message.success("Student updated");
+        fetchStudents();
       } else {
-        await axios.post(API_URL, values);
-        message.success("Student added successfully");
+        // ADD → langsung tampilkan tanpa fetch ulang
+        const res = await axios.post(API_URL, values);
+        const newStudent = res.data;
+
+        setStudents(prev => [newStudent, ...prev]);
+
+// pindah ke halaman 1
+setCurrentPage(1);
+
+message.success("Student added");
+
       }
 
       setIsModalOpen(false);
-      fetchStudents();
     } catch (error) {
       console.error("Save Error:", error);
       message.error("Failed to save student");
     }
   };
 
- 
+  // =========================
+  // Delete
+  // =========================
   const handleDelete = async (id) => {
     try {
       await axios.delete(API_URL, { data: { id } });
-      message.success("Student deleted successfully");
-      fetchStudents();
+
+      setStudents(prev => prev.filter(s => s.id !== id));
+
+      message.success("Student deleted");
     } catch (error) {
       console.error("Delete Error:", error);
       message.error("Failed to delete student");
@@ -98,14 +123,11 @@ export default function StudentsPage() {
           <Button type="link" onClick={() => openModal(record)}>
             Edit
           </Button>
-
           <Popconfirm
-            title="Are you sure to delete?"
+            title="Are you sure?"
             onConfirm={() => handleDelete(record.id)}
           >
-            <Button danger type="link">
-              Delete
-            </Button>
+            <Button danger type="link">Delete</Button>
           </Popconfirm>
         </>
       ),
@@ -132,14 +154,18 @@ export default function StudentsPage() {
       </Button>
 
       <Table
-        columns={columns}
-        dataSource={students}
-        rowKey="id"
-        bordered
-        pagination={{ pageSize: 6 }}
-      />
+  columns={columns}
+  dataSource={students}
+  rowKey="id"
+  bordered
+  pagination={{
+    current: currentPage,
+    pageSize: 6,
+    onChange: (page) => setCurrentPage(page),
+  }}
+/>
 
-     
+
       <Modal
         title={editingStudent ? "Edit Student" : "Add Student"}
         open={isModalOpen}
@@ -148,43 +174,23 @@ export default function StudentsPage() {
         okText="Save"
       >
         <Form form={form} layout="vertical">
-          <Form.Item
-            name="nis"
-            label="NIS"
-            rules={[{ required: true, message: "Please input NIS" }]}
-          >
+          <Form.Item name="nis" label="NIS" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item
-            name="name"
-            label="Name"
-            rules={[{ required: true, message: "Please input name" }]}
-          >
+          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item
-            name="class_name"
-            label="Class"
-            rules={[{ required: true, message: "Please input class" }]}
-          >
+          <Form.Item name="class_name" label="Class" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item
-            name="major"
-            label="Major"
-            rules={[{ required: true, message: "Please input major" }]}
-          >
+          <Form.Item name="major" label="Major" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item
-            name="status"
-            label="Status"
-            rules={[{ required: true, message: "Please input status" }]}
-          >
+          <Form.Item name="status" label="Status" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
         </Form>
