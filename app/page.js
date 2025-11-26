@@ -29,7 +29,11 @@ export default function StudentsPage() {
     setLoading(true);
     try {
       const res = await axios.get(API_URL);
-      setStudents(res.data);
+
+     
+      const sorted = [...res.data].sort((a, b) => b.id - a.id);
+      setStudents(sorted);
+
       message.success("Students loaded successfully");
     } catch (error) {
       console.error("Fetch Error:", error);
@@ -43,7 +47,7 @@ export default function StudentsPage() {
     fetchStudents();
   }, []);
 
-  
+ 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -53,8 +57,9 @@ export default function StudentsPage() {
         try {
           await axios.put(API_URL, { id: editingStudent.id, ...values });
           message.success("Student updated successfully");
+          await fetchStudents();
         } catch (error) {
-          
+        
           setStudents((prev) =>
             prev.map((s) =>
               s.id === editingStudent.id ? { ...s, ...values } : s
@@ -67,10 +72,16 @@ export default function StudentsPage() {
         try {
           await axios.post(API_URL, values);
           message.success("Student added successfully");
-        } catch (error) {
+
           
+          await fetchStudents();
+        } catch (error) {
+         
           const newId = Math.max(...students.map((s) => s.id), 0) + 1;
-          setStudents((prev) => [...prev, { id: newId, ...values }]);
+
+         
+          setStudents((prev) => [{ id: newId, ...values }, ...prev]);
+
           message.warning("API add failed — added locally instead");
         }
       }
@@ -89,11 +100,13 @@ export default function StudentsPage() {
       message.success("Student deleted successfully");
       fetchStudents();
     } catch (error) {
+    
       setStudents((prev) => prev.filter((s) => s.id !== id));
       message.warning("API delete failed — deleted locally instead");
     }
   };
 
+ 
   const openModal = (student = null) => {
     setEditingStudent(student);
     form.resetFields();
@@ -101,6 +114,7 @@ export default function StudentsPage() {
     setIsModalOpen(true);
   };
 
+  
   const columns = [
     { title: "ID", dataIndex: "id", width: 60 },
     { title: "NIS", dataIndex: "nis" },
@@ -128,6 +142,7 @@ export default function StudentsPage() {
     },
   ];
 
+ 
   if (loading)
     return (
       <div style={{ textAlign: "center", padding: 50 }}>
@@ -135,6 +150,7 @@ export default function StudentsPage() {
       </div>
     );
 
+  
   return (
     <div style={{ padding: 24 }}>
       <h1>Data Murid</h1>
@@ -152,7 +168,7 @@ export default function StudentsPage() {
         dataSource={students}
         rowKey="id"
         bordered
-        pagination={{ pageSize: 6 }}
+        pagination={{ pageSize: 6 }} // tetap ada pagination
       />
 
       <Modal

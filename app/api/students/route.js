@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 
 const API_URL = "https://course.summitglobal.id/students";
 
-// =========================
-// GET ALL STUDENTS
-// =========================
+
 export async function GET() {
   try {
     const res = await fetch(API_URL, { cache: "no-store" });
@@ -20,9 +18,7 @@ export async function GET() {
   }
 }
 
-// =========================
-// ADD STUDENT
-// =========================
+
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -35,7 +31,7 @@ export async function POST(req) {
 
     const json = await res.json();
 
-    // FIX → kirim langsung student baru
+    
     return NextResponse.json(json.body?.data || json);
   } catch (err) {
     console.error("POST Error:", err);
@@ -46,9 +42,7 @@ export async function POST(req) {
   }
 }
 
-// =========================
-// UPDATE STUDENT
-// =========================
+
 export async function PUT(req) {
   try {
     const body = await req.json();
@@ -71,9 +65,7 @@ export async function PUT(req) {
   }
 }
 
-// =========================
-// DELETE STUDENT
-// =========================
+
 export async function DELETE(req) {
   try {
     const { id } = await req.json();

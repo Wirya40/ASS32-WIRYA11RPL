@@ -26,15 +26,13 @@ export default function StudentsPage() {
   const [form] = Form.useForm();
   const router = useRouter();
 
-  // =========================
-  // Fetch Students
-  // =========================
+  
   const fetchStudents = async () => {
     setLoading(true);
     try {
       const res = await axios.get(API_URL);
 
-      // SORT TERBARU DI ATAS
+     
       const sorted = [...res.data].sort((a, b) => b.id - a.id);
 
       setStudents(sorted);
@@ -50,9 +48,7 @@ export default function StudentsPage() {
     fetchStudents();
   }, []);
 
-  // =========================
-  // Add / Edit Modal
-  // =========================
+  
   const openModal = (student = null) => {
     setEditingStudent(student);
     form.resetFields();
@@ -60,26 +56,24 @@ export default function StudentsPage() {
     setIsModalOpen(true);
   };
 
-  // =========================
-  // Submit Add / Edit
-  // =========================
+  
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
 
       if (editingStudent) {
-        // UPDATE
+      
         await axios.put(API_URL, { id: editingStudent.id, ...values });
         message.success("Student updated");
         fetchStudents();
       } else {
-        // ADD → langsung tampilkan tanpa fetch ulang
+       
         const res = await axios.post(API_URL, values);
         const newStudent = res.data;
 
         setStudents(prev => [newStudent, ...prev]);
 
-// pindah ke halaman 1
+
 setCurrentPage(1);
 
 message.success("Student added");
@@ -93,9 +87,7 @@ message.success("Student added");
     }
   };
 
-  // =========================
-  // Delete
-  // =========================
+  
   const handleDelete = async (id) => {
     try {
       await axios.delete(API_URL, { data: { id } });
